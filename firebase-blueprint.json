@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "AppData": {
+      "title": "AppData",
+      "description": "Application to join team",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "fb": { "type": "string" },
+        "hobby": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["name", "email", "fb", "hobby"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "Team member",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "fb": { "type": "string" },
+        "hobby": { "type": "string" },
+        "image": { "type": "string" },
+        "rank": { "type": "string" },
+        "special": { "type": "boolean" }
+      },
+      "required": ["name", "email", "fb", "hobby", "rank", "special"]
+    },
+    "FollowerApp": {
+      "title": "FollowerApp",
+      "description": "Application to join as follower",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "fb": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["name", "fb"]
+    },
+    "FooterLink": {
+      "title": "FooterLink",
+      "description": "Footer link",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" }
+      },
+      "required": ["name", "url"]
+    },
+    "Clip": {
+      "title": "Clip",
+      "description": "Dubbing clip",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "thumbSrc": { "type": "string" },
+        "videoSrc": { "type": "string" }
+      },
+      "required": ["title", "thumbSrc", "videoSrc"]
+    },
+    "Episode": {
+      "title": "Episode",
+      "description": "Anime episode",
+      "type": "object",
+      "properties": {
+        "animeName": { "type": "string" },
+        "season": { "type": "string" },
+        "title": { "type": "string" },
+        "thumbSrc": { "type": "string" },
+        "videoSrc": { "type": "string" }
+      },
+      "required": ["animeName", "season", "title", "thumbSrc", "videoSrc"]
+    },
+    "WebConfig": {
+      "title": "WebConfig",
+      "description": "Website config",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "desc": { "type": "string" },
+        "s1": { "type": "string" },
+        "s2": { "type": "string" },
+        "s3": { "type": "string" },
+        "about": { "type": "string" },
+        "adminName": { "type": "string" },
+        "adminBio": { "type": "string" },
+        "adminColor": { "type": "string" },
+        "adminImage": { "type": "string" },
+        "adminPass": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/apps/{appId}": {
+      "schema": { "$ref": "#/entities/AppData" },
+      "description": "Pending team applications"
+    },
+    "/members/{memberId}": {
+      "schema": { "$ref": "#/entities/Member" },
+      "description": "Approved team members"
+    },
+    "/followerApps/{followerAppId}": {
+      "schema": { "$ref": "#/entities/FollowerApp" },
+      "description": "Pending follower applications"
+    },
+    "/followers/{followerId}": {
+      "schema": { "$ref": "#/entities/FollowerApp" },
+      "description": "Approved followers"
+    },
+    "/footerLinks/{linkId}": {
+      "schema": { "$ref": "#/entities/FooterLink" },
+      "description": "Footer links"
+    },
+    "/clips/{clipId}": {
+      "schema": { "$ref": "#/entities/Clip" },
+      "description": "Dubbing clips"
+    },
+    "/episodes/{episodeId}": {
+      "schema": { "$ref": "#/entities/Episode" },
+      "description": "Anime episodes"
+    },
+    "/config/webParams": {
+      "schema": { "$ref": "#/entities/WebConfig" },
+      "description": "Global website configuration"
+    }
+  }
+}
