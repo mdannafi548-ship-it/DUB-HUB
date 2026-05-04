@@ -1,5 +1,4 @@
 @import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
 :root {
@@ -21,7 +20,7 @@ body {
   overflow-x: hidden; 
 }
 
-/* Floating Animation */
+/* Animations */
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-15px); }
@@ -41,43 +40,27 @@ body {
   100% {background-position:0% 50%} 
 }
 
-.float-anim {
-  animation: float 4s ease-in-out infinite;
-}
-.float-special {
-  animation: special-glow 1.5s infinite alternate, float 5s ease-in-out infinite;
-}
-.float-follower {
-  animation: follower-glow 1.5s infinite alternate, float 4s ease-in-out infinite;
-}
+/* Utility Classes */
+.float-anim { animation: float 4s ease-in-out infinite; }
+.float-special { animation: special-glow 1.5s infinite alternate, float 5s ease-in-out infinite; }
+.float-follower { animation: follower-glow 1.5s infinite alternate, float 4s ease-in-out infinite; }
+
 .admin-multiple { 
   background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ced1, #002bff, #7a00ff, #ff00c8, #ff0000); 
   background-size: 400%; 
   animation: rainbow 10s linear infinite, float 4s ease-in-out infinite; 
   border: 2px solid white; 
 }
+
 .admin-vivid-orange-red {
   background: linear-gradient(135deg, #ff4500, #ff8c00);
   animation: float 4s ease-in-out infinite;
   border: 2px solid white;
 }
-.admin-dark-green-grey {
-  background: linear-gradient(135deg, #2f4f4f, #1e3f3f);
-  animation: float 4s ease-in-out infinite;
-  border: 2px solid white;
-}
-.admin-frosty-blue-grey {
-  background: linear-gradient(135deg, #708090, #506070);
-  animation: float 4s ease-in-out infinite;
-  border: 2px solid white;
-}
+
+/* Card Styles */
 .card-color-green { border-bottom: 4px solid #00ff00 !important; box-shadow: 0 4px 15px rgba(0,255,0,0.2); }
 .card-color-blue { border-bottom: 4px solid #0000ff !important; box-shadow: 0 4px 15px rgba(0,0,255,0.2); }
-.card-color-dark-blue { border-bottom: 4px solid #00008b !important; box-shadow: 0 4px 15px rgba(0,0,139,0.4); }
-.card-color-golden-silver { border-bottom: 4px solid #ffd700 !important; box-shadow: 0 4px 15px rgba(192,192,192,0.4); }
-.card-color-diamond, .admin-diamond { border: 2px solid #b9f2ff !important; box-shadow: 0 0 20px #b9f2ff; background: rgba(185,242,255,0.1) !important; backdrop-filter: blur(5px); }
-.card-color-reflect, .admin-reflect { border: 2px solid rgba(255,255,255,0.5) !important; background: rgba(0,0,0,0.4) !important; backdrop-filter: blur(2px); overflow: hidden; color: white !important; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-
 
 .clip-text {
   background: linear-gradient(90deg, var(--purple), var(--accent)); 
@@ -95,29 +78,17 @@ body {
   animation: rainbow 5s linear infinite;
 }
 
-.rainbow-bg {
-  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ced1, #002bff, #7a00ff, #ff00c8, #ff0000);
-  background-size: 400%; 
-  animation: rainbow 5s linear infinite;
-}
-
 .watch-btn {
   background: linear-gradient(45deg, rgba(138,43,226,0.3), rgba(0,206,209,0.3));
   border: 2px solid var(--accent);
   box-shadow: 0 0 15px var(--accent);
   animation: float 4s ease-in-out infinite;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.3s ease;
 }
 
-.watch-btn:hover, .watch-btn:active {
+.watch-btn:hover {
   transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 0 30px var(--accent), 0 0 10px var(--purple);
-  animation: none;
+  box-shadow: 0 0 30px var(--accent);
 }
 
-/* Hide scrollbar for video items container */
-.hide-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-
+.hide-scroll::-webkit-scrollbar { display: none; }

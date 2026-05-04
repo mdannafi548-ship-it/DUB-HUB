@@ -2,10 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth } from "firebase/auth";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAK8ShsstYvifbwmHSzhI2N0I8beB6mjCo",
   authDomain: "dub-hub-95de5.firebaseapp.com",
@@ -16,12 +14,12 @@ const firebaseConfig = {
   measurementId: "G-2YY5DLNC1D"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const auth = getAuth(app);
 export default app;
 
 export const uploadToCloudinary = async (file: File) => {
