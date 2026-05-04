@@ -71,6 +71,13 @@ body {
   animation: float 4s ease-in-out infinite;
   border: 2px solid white;
 }
+.card-color-green { border-bottom: 4px solid #00ff00 !important; box-shadow: 0 4px 15px rgba(0,255,0,0.2); }
+.card-color-blue { border-bottom: 4px solid #0000ff !important; box-shadow: 0 4px 15px rgba(0,0,255,0.2); }
+.card-color-dark-blue { border-bottom: 4px solid #00008b !important; box-shadow: 0 4px 15px rgba(0,0,139,0.4); }
+.card-color-golden-silver { border-bottom: 4px solid #ffd700 !important; box-shadow: 0 4px 15px rgba(192,192,192,0.4); }
+.card-color-diamond, .admin-diamond { border: 2px solid #b9f2ff !important; box-shadow: 0 0 20px #b9f2ff; background: rgba(185,242,255,0.1) !important; backdrop-filter: blur(5px); }
+.card-color-reflect, .admin-reflect { border: 2px solid rgba(255,255,255,0.5) !important; background: rgba(0,0,0,0.4) !important; backdrop-filter: blur(2px); overflow: hidden; color: white !important; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
 
 .clip-text {
   background: linear-gradient(90deg, var(--purple), var(--accent)); 
