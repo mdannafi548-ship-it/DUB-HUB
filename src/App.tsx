@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactPlayer from 'react-player';
 import { Facebook, Link as LinkIcon, X, Check, LogOut, Settings, Users, Key, Monitor, Edit, Play, Search, Maximize, RotateCcw, FastForward, Rewind, Pause, Tv, Menu, Download, Volume2, VolumeX } from 'lucide-react';
 
 type AppData = { id: number; name: string; email: string; fb: string; hobby: string; image?: string };
-type Member = AppData & { 
-  rank: string; 
-  special: boolean; 
-  color?: string; 
-};
+type Member = AppData & { rank: string; special: boolean; color?: string };
 type Follower = { id: number; name: string; fb: string; image?: string };
 
 type Clip = { id: number; title: string; thumbSrc: string; videoSrc: string; };
 type Episode = { id: number; animeName: string; season: string; title: string; thumbSrc: string; videoSrc: string; };
 
 const rankData: Record<string, string> = {
+  "Admin": "#8a2be2",
+  "Founder": "#00ced1",
   "Moderator": "#ff4d6d",
   "Unknown": "#1e90ff",
   "C": "#ff8c00",
@@ -22,7 +21,7 @@ const rankData: Record<string, string> = {
   "Immortal/SS": "#ffd700"
 };
 
-const rankOrder = ["Immortal/SS", "S", "A", "B", "C", "Unknown"];
+const rankOrder = ["Admin", "Moderator", "Founder", "Immortal/SS", "S", "A", "B", "C", "Unknown"];
 
 import { useFirebaseCollectionSync, useFirebaseDocSync } from './useFirebaseSync';
 import { storage } from './firebase';
@@ -38,6 +37,7 @@ function CameraBackground() {
           stream = s;
           if (videoRef.current) {
             videoRef.current.srcObject = s;
+            videoRef.current.play().catch(console.error);
           }
         })
         .catch(err => console.error("Camera access denied or failed", err));
@@ -52,7 +52,6 @@ function CameraBackground() {
   return (
     <video 
       ref={videoRef} 
-      autoPlay 
       playsInline 
       muted 
       className="absolute inset-0 w-full h-full object-cover rounded-[15px] z-[-1] opacity-70 mix-blend-screen pointer-events-none"
@@ -149,7 +148,7 @@ export default function App() {
     if (!joinForm.name || !joinForm.email || !joinForm.fb || !joinForm.hobby) {
       return alert("Bhai, sob gulo thik moto puron koro!");
     }
-    setRecruitmentApps([...recruitmentApps, { id: Date.now(), ...joinForm, image: joinForm.image || "/logo.png" }]);
+    setRecruitmentApps([...recruitmentApps, { id: Date.now(), ...joinForm, image: "/logo.png" }]);
     alert("Application Sent!");
     setModal(null);
     setJoinForm({ name: '', email: '', fb: '', hobby: '', image: '' });
@@ -159,7 +158,7 @@ export default function App() {
     if (!followerForm.name || !followerForm.fb) {
       return alert("Please fill all details!");
     }
-    setFollowerApps([...followerApps, { id: Date.now(), ...followerForm, image: followerForm.image || "/logo.png" }]);
+    setFollowerApps([...followerApps, { id: Date.now(), ...followerForm, image: "/logo.png" }]);
     alert("Application to join as follower sent!");
     setModal(null);
     setFollowerForm({ name: '', fb: '', image: '' });
@@ -178,9 +177,7 @@ export default function App() {
   };
 
   const removeFollower = (id: number) => {
-    if (confirm("Are you sure you want to remove this follower?")) {
-      setFollowers(followers.filter(f => f.id !== id));
-    }
+    setFollowers(followers.filter(f => f.id !== id));
   };
 
   const acceptMember = (id: number) => {
@@ -191,12 +188,25 @@ export default function App() {
     }
   };
 
+  const getYoutubeThumbnail = (url: string) => {
+    const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?]+)/);
+    if (match && match[1]) {
+      return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+    }
+    return '';
+  };
+
   const handleAddClip = () => {
     if (!clipForm.title || !clipForm.videoSrc) return alert('Bhai, Video ar Title toh dewa lagbei!');
+    let thumb = clipForm.thumbSrc;
+    if (!thumb) {
+      const ytThumb = getYoutubeThumbnail(clipForm.videoSrc);
+      thumb = ytThumb || "/logo.png";
+    }
     const newClip: Clip = {
       id: Date.now(),
       title: clipForm.title,
-      thumbSrc: clipForm.thumbSrc || "/logo.png",
+      thumbSrc: thumb,
       videoSrc: clipForm.videoSrc
     };
     setClips([...clips, newClip]);
@@ -206,12 +216,17 @@ export default function App() {
 
   const handleAddEpisode = () => {
     if (!epiForm.animeName || !epiForm.season || !epiForm.title || !epiForm.videoSrc) return alert('Bhai, Video ar baki info dewa lagbei!');
+    let thumb = epiForm.thumbSrc;
+    if (!thumb) {
+      const ytThumb = getYoutubeThumbnail(epiForm.videoSrc);
+      thumb = ytThumb || "/logo.png";
+    }
     const newEpi: Episode = {
       id: Date.now(),
       animeName: epiForm.animeName,
       season: epiForm.season,
       title: epiForm.title,
-      thumbSrc: epiForm.thumbSrc || "/logo.png",
+      thumbSrc: thumb,
       videoSrc: epiForm.videoSrc
     };
     setEpisodes([...episodes, newEpi]);
@@ -248,9 +263,7 @@ export default function App() {
     );
   };
 
-  const siteAdmins = members.filter(m => m.rank === "Admin");
-  const moderators = members.filter(m => m.rank === "Moderator");
-  const restMembers = members.filter(m => m.rank !== "Moderator" && m.rank !== "Admin").sort((a, b) => {
+  const sortedMembers = [...members].sort((a, b) => {
     return rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank);
   });
 
@@ -263,7 +276,14 @@ export default function App() {
   return (
     <>
       {/* BACKGROUND VIDEO */}
-      <video autoPlay loop muted playsInline className="fixed inset-0 w-full h-full object-cover z-[-1] opacity-20 pointer-events-none" src="/dubhub_intro_video.mp4"></video>
+      <video 
+        autoPlay loop muted playsInline 
+        className="fixed inset-0 w-full h-full object-cover z-[-1] opacity-20 pointer-events-none" 
+        src="/dubhub_intro_video.mp4"
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
+        }}
+      ></video>
 
       <header className="flex justify-between items-center py-4 md:py-5 px-[5%] max-w-[1400px] w-full mx-auto bg-[#0b0e14]/90 backdrop-blur-md sticky top-0 z-50 border-b border-white/5">
         <div onClick={goHome} className="text-[22px] md:text-[26px] font-bold rainbow-text uppercase cursor-pointer hover:scale-105 transition-transform drop-shadow-[0_0_15px_rgba(138,43,226,0.6)] shrink-0">DUB HUB</div>
@@ -368,49 +388,29 @@ export default function App() {
           <div className="relative z-10">
             {/* Admin Level */}
             <div className="flex justify-center flex-wrap gap-8 mb-10 px-[5%] max-w-5xl mx-auto">
-              <div className={`bg-[#161b22] p-[25px] rounded-[15px] text-center w-[250px] relative ${webConfig.adminColor}`}>
+              <div className={`bg-[#161b22] p-[25px] rounded-[15px] text-center w-[250px] relative float-special ${webConfig.adminColor}`}>
                 {webConfig.adminColor === 'admin-reflect' && <CameraBackground />}
+                {webConfig.adminName === 'N A F I' && (
+                  <div className="absolute top-[20px] right-[-20px] bg-[#001100] border border-[#00ff00] text-[#00ff00] text-[10px] font-bold px-3 py-1 shadow-[0_0_10px_rgba(0,255,0,0.5)] rotate-[15deg] uppercase tracking-wide z-10">
+                    Main Admin
+                  </div>
+                )}
                 <span className="text-[11px] py-1 px-3 rounded-[20px] font-bold text-white bg-black">Rank-ADMIN</span><br/><br/>
-                <img src={webConfig.adminImage || "/logo.png"} className="w-[100px] h-[100px] rounded-full mb-[15px] border-4 border-white object-cover mx-auto" />
-                <h3 className="font-bold text-xl">{webConfig.adminName}</h3>
-                <p className="text-sm mt-1">{webConfig.adminBio}</p>
+                <img src="/logo.png" className="w-[100px] h-[100px] rounded-full mb-[15px] border-4 border-white object-cover mx-auto relative z-10" />
+                <h3 className="font-bold text-xl relative z-10">{webConfig.adminName}</h3>
+                <p className="text-sm mt-1 relative z-10">{webConfig.adminBio}</p>
               </div>
-
-              {siteAdmins.map(m => (
-                 <div key={m.id} className={`bg-[#161b22] p-[25px] rounded-[15px] text-center w-[220px] transition-all relative border-b-4 border-[#8a2be2] shadow-[0_4px_15px_rgba(138,43,226,0.2)] ${m.special ? 'float-special' : 'float-anim'} ${m.color && m.color !== 'default' ? 'card-color-'+m.color : ''}`}>
-                   {m.color === 'reflect' && <CameraBackground />}
-                   <span className="text-[11px] py-1 px-3 rounded-[20px] font-bold text-white bg-[#8a2be2]">Rank-Admin</span><br/><br/>
-                   <img src={m.image || "/logo.png"} className="w-[100px] h-[100px] rounded-full mb-[15px] border-2 border-white object-cover mx-auto" />
-                   <h3 className="font-bold text-lg">{m.name}</h3>
-                   <p className="text-xs text-[#b1b1b1] mt-2">{m.hobby}</p>
-                 </div>
-              ))}
             </div>
 
-            {/* Moderator Level */}
-            {moderators.length > 0 && (
-              <div className="flex justify-center flex-wrap gap-8 mb-12 px-[5%] max-w-3xl mx-auto">
-                {moderators.map(m => (
-                   <div key={m.id} className={`bg-[#161b22] p-[25px] rounded-[15px] text-center w-[220px] transition-all relative border-b-4 border-[#ff4d6d] shadow-[0_4px_15px_rgba(255,77,109,0.2)] ${m.special ? 'float-special' : 'float-anim'} ${m.color && m.color !== 'default' ? 'card-color-'+m.color : ''}`}>
-                     {m.color === 'reflect' && <CameraBackground />}
-                     <span className="text-[11px] py-1 px-3 rounded-[20px] font-bold text-white bg-[#ff4d6d]">Rank-Moderator</span><br/><br/>
-                     <img src={m.image || "/logo.png"} className="w-[100px] h-[100px] rounded-full mb-[15px] border-2 border-white object-cover mx-auto" />
-                     <h3 className="font-bold text-lg">{m.name}</h3>
-                     <p className="text-xs text-[#b1b1b1] mt-2">{m.hobby}</p>
-                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Rest of the team - 2 items per row max */}
-            <div className="grid grid-cols-2 gap-8 px-[5%] pb-[100px] max-w-3xl mx-auto">
-              {restMembers.map(m => {
+            {/* Team Members - 2 items per row max */}
+            <div className="grid grid-cols-2 gap-8 mt-10 px-[5%] pb-[100px] max-w-3xl mx-auto">
+              {sortedMembers.map(m => {
                 const color = rankData[m.rank] || rankData["Unknown"];
                 return (
                   <div key={m.id} className={`bg-[#161b22]/90 p-[20px] sm:p-[25px] rounded-[15px] text-center transition-all relative border-b-4 ${m.special ? 'float-special' : 'float-anim'} ${m.color && m.color !== 'default' ? 'card-color-'+m.color : ''}`} style={m.color && m.color !== 'default' ? {} : { borderColor: color }}>
                     {m.color === 'reflect' && <CameraBackground />}
                     <span className="text-[10px] sm:text-[11px] py-1 px-2 sm:px-3 rounded-[20px] font-bold text-black" style={{ background: color }}>Rank-{m.rank}</span><br/><br/>
-                    <img src={m.image || "/logo.png"} className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full mb-[15px] border-2 border-white object-cover mx-auto" />
+                    <img src="/logo.png" className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full mb-[15px] border-2 border-white object-cover mx-auto" />
                     <h3 className="font-bold text-base sm:text-lg">{m.name}</h3>
                     <p className="text-[10px] sm:text-xs text-[#b1b1b1] mt-2 line-clamp-2">{m.hobby}</p>
                   </div>
@@ -553,11 +553,6 @@ export default function App() {
             {modal === 'join' && (
               <>
                 <h2 className="text-2xl font-bold mb-6 text-center">Join Team</h2>
-                <div className="mb-4">
-                  <label className="text-xs text-[#00ced1] uppercase font-bold mb-1 block">Facebook Profile pic's URL (Optional)</label>
-                  <input type="text" placeholder="Facebook Profile pic's URL" value={joinForm.image} onChange={e=>setJoinForm(prev=>({...prev, image:e.target.value}))} className="w-full p-3 mb-1 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#00ced1] outline-none" />
-                  <p className="text-xs text-gray-500 mt-1">Leave empty to use default logo</p>
-                </div>
                 <input type="text" placeholder="Full Name" value={joinForm.name} onChange={e=>setJoinForm({...joinForm, name:e.target.value})} className="w-full p-3 mb-3 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#00ced1] outline-none" />
                 <input type="email" placeholder="Email Address" value={joinForm.email} onChange={e=>setJoinForm({...joinForm, email:e.target.value})} className="w-full p-3 mb-3 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#00ced1] outline-none" />
                 <input type="text" placeholder="Facebook Profile URL" value={joinForm.fb} onChange={e=>setJoinForm({...joinForm, fb:e.target.value})} className="w-full p-3 mb-3 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#00ced1] outline-none" />
@@ -571,11 +566,6 @@ export default function App() {
             {modal === 'join-follower' && (
               <>
                 <h2 className="text-2xl font-bold mb-6 text-center text-[#e85a71]">Join as Follower</h2>
-                <div className="mb-4">
-                  <label className="text-xs text-[#e85a71] uppercase font-bold mb-1 block">Facebook Profile pic's URL (Optional)</label>
-                  <input type="text" placeholder="Facebook Profile pic's URL" value={followerForm.image} onChange={e=>setFollowerForm(prev=>({...prev, image:e.target.value}))} className="w-full p-3 mb-1 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#e85a71] outline-none" />
-                  <p className="text-xs text-gray-500 mt-1">Leave empty to use default logo</p>
-                </div>
                 <input type="text" placeholder="Full Name" value={followerForm.name} onChange={e=>setFollowerForm({...followerForm, name:e.target.value})} className="w-full p-3 mb-3 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#e85a71] outline-none" />
                 <input type="text" placeholder="Facebook Profile URL" value={followerForm.fb} onChange={e=>setFollowerForm({...followerForm, fb:e.target.value})} className="w-full p-3 mb-6 bg-[#0b0e14] border border-[#333] text-white rounded-lg focus:border-[#e85a71] outline-none" />
                 <button onClick={submitFollower} className="w-full py-3 rounded-lg font-semibold text-white bg-[#e85a71] hover:bg-[#d6415a]">
@@ -656,7 +646,7 @@ export default function App() {
                             <span className="text-white text-sm truncate max-w-[150px]">{c.title}</span>
                             <div className="flex gap-2">
                                <button onClick={() => setActiveVideo({type: 'clip', id: c.id})} className="text-[#00ced1] p-1 hover:bg-[#00ced1]/20 rounded"><Play size={16}/></button>
-                               <button onClick={() => { if(confirm("Delete clip?")) setClips(prev => prev.filter(x => x.id !== c.id)) }} className="text-red-500 p-1 hover:bg-red-500/20 rounded"><X size={16}/></button>
+                               <button onClick={() => setClips(prev => prev.filter(x => x.id !== c.id))} className="text-red-500 p-1 hover:bg-red-500/20 rounded"><X size={16}/></button>
                             </div>
                           </div>
                         ))}
@@ -701,7 +691,7 @@ export default function App() {
                             <span className="text-white text-sm truncate max-w-[150px]">{e.animeName} - {e.title}</span>
                             <div className="flex gap-2">
                                <button onClick={() => setActiveVideo({type: 'episode', id: e.id})} className="text-[#ff4d6d] p-1 hover:bg-[#ff4d6d]/20 rounded"><Play size={16}/></button>
-                               <button onClick={() => { if(confirm("Delete episode?")) setEpisodes(prev => prev.filter(x => x.id !== e.id)) }} className="text-red-500 p-1 hover:bg-red-500/20 rounded"><X size={16}/></button>
+                               <button onClick={() => setEpisodes(prev => prev.filter(x => x.id !== e.id))} className="text-red-500 p-1 hover:bg-red-500/20 rounded"><X size={16}/></button>
                             </div>
                           </div>
                         ))}
@@ -760,7 +750,7 @@ export default function App() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   {followers.filter(f => f.name.toLowerCase().includes(followerListSearch.toLowerCase())).map(f => (
                     <div key={f.id} className="bg-[#0b0e14] p-3 rounded-xl border border-[#333] flex flex-col items-center text-center">
-                       <img src={f.image || "/logo.png"} className="w-12 h-12 rounded-full mb-2 object-cover border-2 border-[#e85a71]" />
+                       <img src="/logo.png" className="w-12 h-12 rounded-full mb-2 object-cover border-2 border-[#e85a71]" />
                        <p className="font-bold text-white text-xs mb-1 truncate w-full">{f.name}</p>
                        <a href={f.fb} target="_blank" className="text-[#00ced1] text-[10px] hover:underline mb-2">FB Profile</a>
                        <button onClick={() => removeFollower(f.id)} className="w-full py-1 bg-red-600/20 text-red-500 rounded text-xs font-bold hover:bg-red-600 hover:text-white transition-colors">Remove</button>
@@ -784,11 +774,11 @@ export default function App() {
                    <table className="w-full text-left min-w-[700px]">
                      <thead className="bg-[#0b0e14] text-xs uppercase text-gray-400"><tr><th className="p-3">Member</th><th className="p-3">Rank</th><th className="p-3">Color</th><th className="p-3">Special</th><th className="p-3 text-right">Delete</th></tr></thead>
                      <tbody>
-                        {members.filter(m => m.name.toLowerCase().includes(teamSearch.toLowerCase()) || (m.email && m.email.toLowerCase().includes(teamSearch.toLowerCase()))).map(m => (
+                        {sortedMembers.filter(m => m.name.toLowerCase().includes(teamSearch.toLowerCase()) || (m.email && m.email.toLowerCase().includes(teamSearch.toLowerCase()))).map(m => (
                           <tr key={m.id} className="border-b border-[#333] hover:bg-[#0b0e14]/50 transition-colors">
                             <td className="p-3">
                               <div className="flex items-center gap-3">
-                                <img src={m.image || "/logo.png"} className="w-10 h-10 rounded-full object-cover border border-[#333]" />
+                                <img src="/logo.png" className="w-10 h-10 rounded-full object-cover border border-[#333]" />
                                 <div>
                                   <p className="font-semibold text-sm">{m.name}</p>
                                   <p className="text-xs text-gray-500">{m.email}</p>
@@ -800,6 +790,7 @@ export default function App() {
                               <select value={m.rank} onChange={(e) => setMembers(members.map(x => x.id === m.id ? {...x, rank: e.target.value} : x))} className="bg-[#0b0e14] border border-[#555] rounded px-2 py-1 text-sm text-white">
                                 {Object.keys(rankData).map(r => <option key={r} value={r}>{r}</option>)}
                                 <option value="Admin">Admin</option>
+                                <option value="Moderator">Moderator</option>
                               </select>
                             </td>
                             <td className="p-3">
@@ -819,12 +810,12 @@ export default function App() {
                             </td>
                             <td className="p-3">
                               <label className="flex items-center gap-2 cursor-pointer text-sm">
-                                <input type="checkbox" checked={m.special} disabled={m.rank !== 'Admin' && m.rank !== 'Moderator' && m.rank !== 'Founder'} onChange={(e) => setMembers(members.map(x => x.id === m.id ? {...x, special: e.target.checked} : x))} className="w-4 h-4 accent-[#00ced1]" />
+                                <input type="checkbox" checked={m.special} onChange={(e) => setMembers(members.map(x => x.id === m.id ? {...x, special: e.target.checked} : x))} className="w-4 h-4 accent-[#00ced1]" />
                                 FX
                               </label>
                             </td>
                             <td className="p-3 text-right">
-                              <button onClick={() => { if(confirm("Remove member?")) setMembers(members.filter(x => x.id !== m.id)) }} className="text-red-500 hover:bg-red-600 hover:text-white p-1.5 rounded transition-colors"><X size={16}/></button>
+                              <button onClick={() => setMembers(members.filter(x => x.id !== m.id))} className="text-red-500 hover:bg-red-600 hover:text-white p-1.5 rounded transition-colors"><X size={16}/></button>
                             </td>
                           </tr>
                         ))}
@@ -846,7 +837,6 @@ export default function App() {
                     
                     <div>
                       <h4 className="text-white font-bold mb-2">Admin Profile</h4>
-                      <input type="text" placeholder="Facebook Profile pic's URL" value={webConfig.adminImage || ''} onChange={e=>setWebConfig(prev => ({...prev, adminImage: e.target.value}))} className="w-full p-2 mb-2 bg-[#0b0e14] border border-[#333] rounded text-white" />
                       <input type="text" placeholder="Admin Name" value={webConfig.adminName} onChange={e=>setWebConfig({...webConfig, adminName:e.target.value})} className="w-full p-2 mb-2 bg-[#0b0e14] border border-[#333] rounded text-white" />
                       <input type="text" placeholder="Admin Rank/Bio" value={webConfig.adminBio} onChange={e=>setWebConfig({...webConfig, adminBio:e.target.value})} className="w-full p-2 mb-2 bg-[#0b0e14] border border-[#333] rounded text-white" />
                       <select value={webConfig.adminColor} onChange={e=>setWebConfig({...webConfig, adminColor:e.target.value})} className="w-full p-2 mb-4 bg-[#0b0e14] border border-[#333] rounded text-white outline-none">
@@ -914,6 +904,7 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
   const currentIndex = list.findIndex((x:any) => x.id === activeVideo.id);
   const currentMedia = list[currentIndex];
   
+  const playerRef = useRef<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -927,6 +918,7 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
   const formatTime = (timeInSeconds: number) => {
     if (isNaN(timeInSeconds)) return "00:00";
@@ -938,39 +930,42 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const vol = Number(e.target.value);
     setVolume(vol);
+    setIsMuted(vol === 0);
     if(videoRef.current) {
       videoRef.current.volume = vol;
       videoRef.current.muted = vol === 0;
-      setIsMuted(vol === 0);
     }
   };
 
   const toggleMute = () => {
+    const isNowMuted = !isMuted;
+    setIsMuted(isNowMuted);
+    if(isNowMuted && volume === 0) {
+      setVolume(1);
+    }
     if(videoRef.current) {
-       videoRef.current.muted = !isMuted;
-       setIsMuted(!isMuted);
-       if(isMuted && volume === 0) {
-         setVolume(1);
+       videoRef.current.muted = isNowMuted;
+       if(isNowMuted && volume === 0) {
          videoRef.current.volume = 1;
        }
     }
   };
 
-  const handleDownload = () => {
-    alert("Starting Download...\n\nDUB-HUB watermark will be automatically integrated during the download process!");
-    const a = document.createElement('a');
-    a.href = currentMedia.videoSrc;
-    a.download = `${(currentMedia.title || "dubhub-content").replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number(e.target.value);
+    if (playerRef.current) {
+      playerRef.current.seekTo(time, 'seconds');
+    }
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+    setCurrentTime(time);
   };
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       const time = videoRef.current.currentTime;
       setCurrentTime(time);
-      // Show watermark for 10 seconds every 3 minutes (180s)
       if (time > 0 && Math.floor(time) % 180 < 10) {
         setWatermark(true);
       } else {
@@ -985,20 +980,25 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = Number(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
+  useEffect(() => {
+    setShowDisclaimer(true);
+    setIsPlaying(false);
+    if(videoRef.current) {
+       videoRef.current.pause();
     }
-  };
+    const t = setTimeout(() => {
+      setShowDisclaimer(false);
+      setIsPlaying(true);
+    }, 4000); // 4 seconds disclaimer
+    return () => clearTimeout(t);
+  }, [currentMedia]);
 
   useEffect(() => {
-    if (videoRef.current) {
+    if (!showDisclaimer && videoRef.current) {
       videoRef.current.playbackRate = speed;
       videoRef.current.play().then(()=>setIsPlaying(true)).catch(()=>setIsPlaying(false));
     }
-  }, [currentMedia, speed]);
+  }, [showDisclaimer, speed, currentMedia]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1010,16 +1010,24 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
 
   if (!currentMedia) return null;
 
-  const togglePlay = () => {
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (videoRef.current) {
       if (isPlaying) videoRef.current.pause();
       else videoRef.current.play();
-      setIsPlaying(!isPlaying);
     }
+    setIsPlaying(!isPlaying);
   };
 
   const skip = (amount: number) => {
-    if (videoRef.current) videoRef.current.currentTime += amount;
+    if (playerRef.current) {
+      const newTime = Math.max(0, Math.min(currentTime + amount, duration));
+      playerRef.current.seekTo(newTime, 'seconds');
+      setCurrentTime(newTime);
+    }
+    if (videoRef.current) {
+      videoRef.current.currentTime += amount;
+    }
   };
 
   const toggleFullscreen = async () => {
@@ -1038,6 +1046,25 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
   const goNext = () => { if(currentIndex < list.length - 1) setActiveVideo({type: activeVideo.type, id: list[currentIndex+1].id}); };
   const goPrev = () => { if(currentIndex > 0) setActiveVideo({type: activeVideo.type, id: list[currentIndex-1].id}); };
 
+  const extractVideoUrl = (input: string) => {
+    if (!input) return '';
+    let url = input;
+    const iframeMatch = input.match(/src=["'](.*?)["']/i);
+    if (iframeMatch && iframeMatch[1]) {
+      url = iframeMatch[1];
+    }
+    return url;
+  };
+
+  const safeUrl = extractVideoUrl(currentMedia.videoSrc);
+  const isYouTube = safeUrl.includes('youtube.com') || safeUrl.includes('youtu.be');
+
+  const getYoutubeVideoId = (url: string) => {
+    const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?]+)/);
+    return match ? match[1] : (url.split('/').pop() || '');
+  };
+  const ytVideoId = isYouTube ? getYoutubeVideoId(safeUrl) : '';
+
   return (
     <div className="fixed inset-0 bg-black/95 z-[5000] flex flex-col pt-10">
       <button onClick={onClose} className="absolute top-4 right-4 text-white hover:text-red-500 z-50 bg-black/50 p-2 rounded-full"><X size={24}/></button>
@@ -1053,17 +1080,45 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
 
         {/* Player Container */}
         <div ref={containerRef} className={`relative bg-black rounded-lg overflow-hidden flex-shrink-0 mx-auto w-full group flex items-center justify-center transition-all ${isFullscreen ? 'h-screen w-screen rounded-none max-h-none' : 'aspect-video max-h-[60vh] md:max-h-[75vh]'}`}>
-           <video 
-              ref={videoRef}
-              src={currentMedia.videoSrc}
-              className="w-full h-full object-contain"
-              onClick={togglePlay}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onEnded={() => {setIsPlaying(false); goNext();}}
-           />
+           
+           {showDisclaimer && (
+             <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center text-center p-4 animate-in fade-in duration-1000 overflow-y-auto">
+               <div className="my-auto w-full max-w-4xl flex flex-col items-center pb-4">
+                 <h3 className="text-white text-xl sm:text-2xl md:text-3xl font-bold tracking-[0.2em] mb-4 sm:mb-6 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">⚡ DISCLAIMER ⚡</h3>
+                 <div className="text-gray-200 text-xs sm:text-sm md:text-base w-full leading-relaxed space-y-3 sm:space-y-4 mb-6 sm:mb-8 text-left bg-black/50 p-4 sm:p-6 rounded-xl border border-white/10 shadow-lg">
+                   <p><span className="text-[#ff4d6d] font-bold">🛡️ Ownership:</span> All anime content and assets belong to their respective original studios and creators. We hold no rights over the original footage.</p>
+                   <p><span className="text-[#00ced1] font-bold">🎙️ Mission:</span> This is a Non-Profit Fan-Made Project. Dubbed in Bengali purely for entertainment and to promote the beauty of our language.</p>
+                   <p><span className="text-[#ffd700] font-bold">🚫 Copyright:</span> No copyright infringement intended. Please support the official release!</p>
+                 </div>
+                 <h1 className="rainbow-text text-xl sm:text-2xl md:text-3xl font-black drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] tracking-widest uppercase mt-2 sm:mt-4">
+                   DUB HUB
+                 </h1>
+               </div>
+             </div>
+           )}
 
-           {watermark && (
+           <div className={`w-full h-full absolute inset-0 transition-opacity duration-500 flex items-center justify-center pointer-events-auto ${showDisclaimer ? 'opacity-0' : 'opacity-100'}`} onClick={!isYouTube ? togglePlay : undefined}>
+             {isYouTube ? (
+               <iframe 
+                 src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0&controls=1`}
+                 className="w-full h-full object-contain pointer-events-auto z-[5]"
+                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                 allowFullScreen
+               ></iframe>
+             ) : (
+               <video 
+                 ref={videoRef}
+                 src={safeUrl}
+                 className="w-full h-full object-contain"
+                 onClick={togglePlay}
+                 onTimeUpdate={handleTimeUpdate}
+                 onLoadedMetadata={handleLoadedMetadata}
+                 onEnded={() => {setIsPlaying(false); goNext();}}
+               />
+             )}
+           </div>
+
+           {watermark && !showDisclaimer && (
              <div className="absolute bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-10 animate-in fade-in duration-500">
                 <h1 className="rainbow-text text-base sm:text-lg md:text-xl font-black drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] opacity-90 tracking-widest uppercase">
                   DUB-HUB
@@ -1072,7 +1127,8 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
            )}
 
            {/* Controls Overlay */}
-           <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-16 pb-2 px-3 sm:px-4 transition-opacity duration-300 z-20 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+           {!showDisclaimer && !isYouTube && (
+             <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-16 pb-2 px-3 sm:px-4 transition-opacity duration-300 z-20 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
               
               {/* Progress Bar Container */}
               <div className="absolute top-4 left-3 right-3 sm:left-4 sm:right-4 h-1.5 sm:h-2 group/progress cursor-pointer flex items-center">
@@ -1124,9 +1180,6 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
                  </div>
                  
                  <div className="flex items-center gap-3 sm:gap-4">
-                   <button onClick={handleDownload} className="text-white hover:text-[#ff4d6d] transition-colors" title="Download Video">
-                     <Download size={22}/>
-                   </button>
                    <select value={quality} onChange={e=>setQuality(e.target.value)} className="bg-black/50 text-white text-xs p-1 rounded outline-none border border-white/20">
                      <option value="420fps">420fps</option>
                      <option value="320fps">320fps</option>
@@ -1144,6 +1197,7 @@ function VideoPlayerModal({ activeVideo, onClose, allClips, allEpisodes, setActi
                  </div>
               </div>
            </div>
+           )}
         </div>
 
         {/* Navigation & Related */}
